@@ -1,7 +1,7 @@
 # 🚀 Project Name
 
 ## 📌 Table of Contents
-- [Introduction](#introduction)
+- [Introduction](#introduction) 
 - [Demo](#demo)
 - [Inspiration](#inspiration)
 - [What It Does](#what-it-does)
