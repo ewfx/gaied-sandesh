@@ -1,6 +1,9 @@
 using GenAIED_Sandesh.Interfaces;
+using GenAIED_Sandesh.Models;
 using GenAIED_Sandesh.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace GenAIED_Sandesh.Controllers
 {
@@ -12,13 +15,13 @@ namespace GenAIED_Sandesh.Controllers
         private readonly ILogger<EmailClassifierController> _logger;
         private readonly IModelTrainer _modelTrainer;
         private readonly IEmailExtractorService _emailExtractor;
-        private readonly IAppSettingsService _appSettingsService;
+        private readonly IOptions<List<InputData>> _appSettingsService;
         private readonly IWebHostEnvironment _env;
 
         public EmailClassifierController(ILogger<EmailClassifierController> logger,
             IModelTrainer modelTrainer,
             IEmailExtractorService emailExtractor,
-            IAppSettingsService appSettingsService,
+            IOptions<List<InputData>> appSettingsService,
             IWebHostEnvironment env)
         {
             _logger = logger;
@@ -31,7 +34,7 @@ namespace GenAIED_Sandesh.Controllers
         [HttpGet("CreateModelsAndSave")]
         public bool CreateModelsAndSave()
         {
-            var trainingData=_appSettingsService.ReadAppSettings();
+            var trainingData=_appSettingsService.Value;
             _modelTrainer.CreateModelsAndSave(trainingData);
             return true;
         }

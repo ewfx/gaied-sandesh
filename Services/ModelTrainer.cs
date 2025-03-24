@@ -8,10 +8,12 @@ namespace GenAIED_Sandesh.Services
     {
         private readonly IWebHostEnvironment _env;
         private readonly IEmailExtractorService _emailExtractorService;
-        public ModelTrainer(IWebHostEnvironment env, IEmailExtractorService emailExtractorService)
+        private readonly ILabelMapper _labelMapper;
+        public ModelTrainer(IWebHostEnvironment env, IEmailExtractorService emailExtractorService, ILabelMapper labelMapper)
         {
             _env = env;
             _emailExtractorService = emailExtractorService;
+            _labelMapper = labelMapper;
         }
         public void CreateModelsAndSave(List<InputData> data)
         {
@@ -69,11 +71,51 @@ namespace GenAIED_Sandesh.Services
                 var subRequestTypePrediction = subRequestTypePredictionEngine.Predict(new InputData { Text = data });
 
                 // Step 10: Display results
-                Console.WriteLine($"Text: {data}");
-                Console.WriteLine($"Predicted RequestType: {requestTypePrediction.PredictedRequestType}");
-                Console.WriteLine($"RequestType Scores: [{string.Join(", ", requestTypePrediction.RequestTypeScores)}]");
-                Console.WriteLine($"Predicted SubRequestType: {subRequestTypePrediction.PredictedSubRequestType}");
-                Console.WriteLine($"SubRequestType Scores: [{string.Join(", ", subRequestTypePrediction.SubRequestTypeScores)}]");
+                Console.WriteLine($"\nInput Text: \"{data}\"");
+                Console.WriteLine("\n-----------------------");
+                Console.WriteLine("Request Type Prediction:");
+                Console.WriteLine("-----------------------");
+                Console.WriteLine($"Predicted: {requestTypePrediction.PredictedRequestType}");
+                Console.WriteLine($"Confidence: {requestTypePrediction.RequestTypeScores.Max():P2}");
+
+                // Get and sort RequestType scores in descending order
+                var sortedRequestScores = requestTypePrediction.RequestTypeScores
+                    .Select((value, index) => new
+                    {
+                        Label = _labelMapper.GetRequestTypeLabel(index),
+                        Score = value
+                    })
+                    .OrderByDescending(x => x.Score)
+                    .ToList();
+
+                Console.WriteLine("\nAll RequestType Scores (Descending Order):");
+                foreach (var score in sortedRequestScores)
+                {
+                    Console.WriteLine($"- {score.Label}: {score.Score:P2}");
+                }
+
+                Console.WriteLine("\n--------------------------");
+                Console.WriteLine("SubRequest Type Prediction:");
+                Console.WriteLine("--------------------------");
+                Console.WriteLine($"Predicted: {subRequestTypePrediction.PredictedSubRequestType}");
+                Console.WriteLine($"Confidence: {subRequestTypePrediction.SubRequestTypeScores.Max():P2}");
+
+                // Get and sort SubRequestType scores in descending order
+                var sortedSubRequestScores = subRequestTypePrediction.SubRequestTypeScores
+                    .Select((value, index) => new
+                    {
+                        Label = _labelMapper.GetSubRequestTypeLabel(index),
+                        Score = value
+                    })
+                    .OrderByDescending(x => x.Score)
+                    .ToList();
+
+                Console.WriteLine("\nAll SubRequestType Scores (Descending Order):");
+                foreach (var score in sortedSubRequestScores)
+                {
+                    Console.WriteLine($"- {score.Label}: {score.Score:P2}");
+                }
+                Console.WriteLine("\n========================================\n");
             }
 
         }
