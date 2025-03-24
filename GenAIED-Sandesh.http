@@ -1,0 +1,6 @@
+@GenAIED_Sandesh_HostAddress = http://localhost:5200
+
+GET {{GenAIED_Sandesh_HostAddress}}/EmailClassifier/
+Accept: application/json
+
+###
