@@ -8,10 +8,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <div class="container mt-4">
+    <div class="container mt-6">
         <h2 class="mb-3">Email Classification Results</h2>
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped">
+        <div class="table-bordered" style="width:100%">
+            <table class="table table-bordered table-striped" style="width:100%">
                 <thead>
                     <tr>
                         <th>Email Name</th>
@@ -35,7 +35,6 @@
 
     <script>
         $(document).ready(function () {
-            alert("Hi")
             $.ajax({
                 url: "/EmailClassifier/PredictData",
                 method: "GET",
