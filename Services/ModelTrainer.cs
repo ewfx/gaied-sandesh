@@ -124,11 +124,11 @@ namespace GenAIED_Sandesh.Services
                 }
 
                 data.PredictedSubRequestType = subRequestTypePrediction.PredictedSubRequestType;
-                data.PredictedSubRequestTypeConfidenceScore = subRequestTypePrediction.SubRequestTypeScores.Max().ToString();
+                data.PredictedRequestTypeConfidenceScore = subRequestTypePrediction.SubRequestTypeScores.Max().ToString();
                 data.SubRequestTypeConfidenceScores = string.Join(",", sortedSubRequestScores);
                 Console.WriteLine("\n========================================\n");               
             }
-            return listText;
+             return listText;
         }
     }
 }
