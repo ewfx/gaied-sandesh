@@ -3,6 +3,8 @@ using MimeKit;
 using Tesseract;
 using Aspose.Words;
 using Aspose.Email.Mapi;
+using Microsoft.ML;
+using GenAIED_Sandesh.Models;
 
 namespace GenAIED_Sandesh.Services
 {
@@ -47,7 +49,7 @@ namespace GenAIED_Sandesh.Services
 
         }
 
-        public List<string> ReadEmailsAndAttachment()
+        public List<PredictionOutput> ReadEmailsAndAttachment()
         {
             string folderPath = Path.Combine(path, "MailMessages"); // Change to your folder path
 
@@ -55,7 +57,7 @@ namespace GenAIED_Sandesh.Services
 
         }
 
-        public string ExtractTextFromMsgFiles(string fileName)
+        public (string, string) ExtractTextFromMsgFiles(string fileName)
         {
             MapiMessage msg = MapiMessage.FromMailMessage(fileName);
 
@@ -66,11 +68,14 @@ namespace GenAIED_Sandesh.Services
             // Extract email body (HTML/PlainText)
             emailText = "\n\n" + msg.Body; // or msg.BodyHtml
 
-          
 
+            var attachmentsList = "";
             // Extract attachments
             foreach (MapiAttachment attachment in msg.Attachments)
             {
+                attachmentsList = (string.IsNullOrEmpty(attachmentsList)) ?
+                    attachment.FileName :
+                    "," + attachment.FileName;
                 string attachmentFileName = attachment.FileName.ToLower();
                 string contentType = attachment.MimeTag.ToString().ToLower();
                 string attachmentText = "";
@@ -118,25 +123,36 @@ namespace GenAIED_Sandesh.Services
 
                 emailText += "\n\n" + attachmentText;
             }
-            return emailText;
+            return (attachmentsList,emailText);
         }
 
-        public List<string> ReadEmlFilesFromFolder(string folderPath)
+        public List<PredictionOutput> ReadEmlFilesFromFolder(string folderPath)
         {
-            var emailTexts = new List<string>();
+            var emailTexts = new List<PredictionOutput>();
             var emlFiles = Directory.GetFiles(folderPath, "*.eml");
-
             foreach (var emlFile in emlFiles)
             {
-                string emailContent = ReadEmlContent(emlFile);
-                emailTexts.Add(emailContent);
+                var retValue = ReadEmlContent(emlFile);
+                emailTexts.Add(new PredictionOutput
+                {
+                    EmailName = Path.GetFileName(emlFile),
+                    EmailExtension = Path.GetExtension(emlFile),
+                    EmailAttachments = retValue.Item1,
+                    ExtractedText = retValue.Item2
+                });                              
             }
 
             var msgFiles = Directory.GetFiles(folderPath, "*.msg");
             foreach (var msgFile in msgFiles)
-            {
-                string emailContent = ExtractTextFromMsgFiles(msgFile);
-                emailTexts.Add(emailContent);
+            {              
+                var retValue = ExtractTextFromMsgFiles(msgFile);
+                emailTexts.Add(new PredictionOutput
+                {
+                    EmailName = Path.GetFileName(msgFile),
+                    EmailExtension = Path.GetExtension(msgFile),
+                    EmailAttachments = retValue.Item1,
+                    ExtractedText = retValue.Item2
+                });
             }
 
             return emailTexts;
@@ -144,8 +160,8 @@ namespace GenAIED_Sandesh.Services
 
 
 
-        public string ReadEmlContent(string filePath)
-        {
+        public (string,string) ReadEmlContent(string filePath)
+        {            
             try
             {
                 var message = MimeMessage.Load(filePath);
@@ -154,9 +170,12 @@ namespace GenAIED_Sandesh.Services
 
                     emailText += "\n\n" +  message.TextBody ?? message.HtmlBody ?? "";
 
-
+                var attachmentNames = "";
                 foreach (var attachment in message.Attachments)
                 {
+                    attachmentNames+= (string.IsNullOrEmpty(attachmentNames))?
+                        attachment.ContentDisposition?.FileName ?? attachment.ContentType.Name:
+                        "," +attachment.ContentDisposition?.FileName ?? attachment.ContentType.Name;
                     if (attachment is MimePart part && part.IsAttachment)
                     {
                         using (var memoryStream = new MemoryStream())
@@ -179,14 +198,13 @@ namespace GenAIED_Sandesh.Services
                             emailText += "\n\n" + attachmentText;
                         }
                     }
-                }
-
-                return emailText;
+                }     
+                return (attachmentNames, emailText);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Error reading email: " + ex.Message);
-                return "";
+                return (null, null);
             }
         }
 

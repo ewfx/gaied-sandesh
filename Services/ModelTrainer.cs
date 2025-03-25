@@ -51,7 +51,7 @@ namespace GenAIED_Sandesh.Services
 
         }
 
-        public void PredictData()
+        public List<PredictionOutput> PredictData()
         {
             var mlContext = new MLContext(seed: 0);
             var path=_env.ContentRootPath;
@@ -67,8 +67,8 @@ namespace GenAIED_Sandesh.Services
             // Step 9: Test a prediction
             foreach (var data in listText)
             {
-                var requestTypePrediction = requestTypePredictionEngine.Predict(new InputData { Text = data });
-                var subRequestTypePrediction = subRequestTypePredictionEngine.Predict(new InputData { Text = data });
+                var requestTypePrediction = requestTypePredictionEngine.Predict(new InputData { Text = data.ExtractedText });
+                var subRequestTypePrediction = subRequestTypePredictionEngine.Predict(new InputData { Text = data.ExtractedText });
 
                 // Step 10: Display results
                 Console.WriteLine($"\nInput Text: \"{data}\"");
@@ -77,6 +77,8 @@ namespace GenAIED_Sandesh.Services
                 Console.WriteLine("-----------------------");
                 Console.WriteLine($"Predicted: {requestTypePrediction.PredictedRequestType}");
                 Console.WriteLine($"Confidence: {requestTypePrediction.RequestTypeScores.Max():P2}");
+
+               
 
                 // Get and sort RequestType scores in descending order
                 var sortedRequestScores = requestTypePrediction.RequestTypeScores
@@ -93,12 +95,17 @@ namespace GenAIED_Sandesh.Services
                 {
                     Console.WriteLine($"- {score.Label}: {score.Score:P2}");
                 }
+                data.PredictedRequestType = requestTypePrediction.PredictedRequestType;
+                data.PredictedRequestTypeConfidenceScore = requestTypePrediction.RequestTypeScores.Max().ToString();
+                data.RequestTypeConfidenceScores = string.Join(",", sortedRequestScores);
+
 
                 Console.WriteLine("\n--------------------------");
                 Console.WriteLine("SubRequest Type Prediction:");
                 Console.WriteLine("--------------------------");
                 Console.WriteLine($"Predicted: {subRequestTypePrediction.PredictedSubRequestType}");
-                Console.WriteLine($"Confidence: {subRequestTypePrediction.SubRequestTypeScores.Max():P2}");
+                Console.WriteLine($"Confidence: {subRequestTypePrediction.SubRequestTypeScores.Max():P2}");              
+
 
                 // Get and sort SubRequestType scores in descending order
                 var sortedSubRequestScores = subRequestTypePrediction.SubRequestTypeScores
@@ -115,9 +122,13 @@ namespace GenAIED_Sandesh.Services
                 {
                     Console.WriteLine($"- {score.Label}: {score.Score:P2}");
                 }
-                Console.WriteLine("\n========================================\n");
-            }
 
+                data.PredictedSubRequestType = subRequestTypePrediction.PredictedSubRequestType;
+                data.PredictedSubRequestTypeConfidenceScore = subRequestTypePrediction.SubRequestTypeScores.Max().ToString();
+                data.SubRequestTypeConfidenceScores = string.Join(",", sortedSubRequestScores);
+                Console.WriteLine("\n========================================\n");               
+            }
+            return listText;
         }
     }
 }

@@ -40,10 +40,10 @@ namespace GenAIED_Sandesh.Controllers
         }
 
         [HttpGet("PredictData")]
-        public bool PredictData()
+        public List<PredictionOutput> PredictData()
         {
-            _modelTrainer.PredictData();
-            return true;
+            var output=_modelTrainer.PredictData();
+            return output;
         }
     }
 }
