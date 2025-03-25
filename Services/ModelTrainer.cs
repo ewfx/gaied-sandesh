@@ -93,11 +93,12 @@ namespace GenAIED_Sandesh.Services
                 Console.WriteLine("\nAll RequestType Scores (Descending Order):");
                 foreach (var score in sortedRequestScores)
                 {
+
                     Console.WriteLine($"- {score.Label}: {score.Score:P2}");
                 }
                 data.PredictedRequestType = requestTypePrediction.PredictedRequestType;
                 data.PredictedRequestTypeConfidenceScore = requestTypePrediction.RequestTypeScores.Max().ToString();
-                data.RequestTypeConfidenceScores = string.Join(",", sortedRequestScores);
+                data.RequestTypeConfidenceScores = string.Join(", ",sortedRequestScores.Select(score => $"{score.Label}:{score.Score:P0}"));
 
 
                 Console.WriteLine("\n--------------------------");
@@ -125,7 +126,7 @@ namespace GenAIED_Sandesh.Services
 
                 data.PredictedSubRequestType = subRequestTypePrediction.PredictedSubRequestType;
                 data.PredictedRequestTypeConfidenceScore = subRequestTypePrediction.SubRequestTypeScores.Max().ToString();
-                data.SubRequestTypeConfidenceScores = string.Join(",", sortedSubRequestScores);
+                data.SubRequestTypeConfidenceScores = string.Join(", ",sortedSubRequestScores.Select(score => $"{score.Label}:{score.Score:P0}"));
                 Console.WriteLine("\n========================================\n");               
             }
              return listText;
