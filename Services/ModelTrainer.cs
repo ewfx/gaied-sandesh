@@ -125,7 +125,7 @@ namespace GenAIED_Sandesh.Services
                 }
 
                 data.PredictedSubRequestType = subRequestTypePrediction.PredictedSubRequestType;
-                data.PredictedRequestTypeConfidenceScore = subRequestTypePrediction.SubRequestTypeScores.Max().ToString();
+                data.PredictedSubRequestTypeConfidenceScore = subRequestTypePrediction.SubRequestTypeScores.Max().ToString();
                 data.SubRequestTypeConfidenceScores = string.Join(", ",sortedSubRequestScores.Select(score => $"{score.Label}:{score.Score:P0}"));
                 Console.WriteLine("\n========================================\n");               
             }

@@ -19,7 +19,7 @@
                         <th>Email Attachments</th>
                         <th>Extracted Text</th>
                         <th>Predicted Request Type</th>
-                        <th>Confidence Score</th>
+                        <th>Request Confidence Score</th>
                         <th>Request Type Confidence Scores</th>
                         <th>Predicted Sub Request Type</th>
                         <th>Sub Request Confidence Score</th>
@@ -35,35 +35,156 @@
 
     <script>
         $(document).ready(function () {
+            // Cache table body reference
+            const $tableBody = $("#emailTableBody");
+
+            // Show loading state
+            function showLoading() {
+                $tableBody.html(`
+                        <tr id="loadingRow">
+                            <td colspan="10" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span class="ms-2">Processing email data...</span>
+                            </td>
+                        </tr>
+                    `);
+            }
+
+            // Show empty state
+            function showEmpty() {
+                $tableBody.html(`
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-4"></i>
+                                <div class="mt-2">No classified emails found</div>
+                            </td>
+                        </tr>
+                    `);
+            }
+
+            // Show error state
+            function showError(message) {
+                $tableBody.html(`
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-danger">
+                                <i class="bi bi-exclamation-triangle fs-4"></i>
+                                <div class="mt-2">${message || 'Failed to load data'}</div>
+                                <button class="btn btn-sm btn-outline-primary mt-2" onclick="window.location.reload()">
+                                    <i class="bi bi-arrow-clockwise"></i> Try Again
+                                </button>
+                            </td>
+                        </tr>
+                    `);
+            }
+
+            // Format confidence scores
+            function formatScores(scores) {
+                if (!scores) return 'N/A';
+                try {
+                    const parsed = JSON.parse(scores);
+                    return Object.entries(parsed)
+                        .map(([key, value]) => `${key}: ${(value * 100).toFixed(1)}%`)
+                        .join(', ');
+                } catch {
+                    return scores;
+                }
+            }
+
+            // Initialize load
+            showLoading();
+
             $.ajax({
                 url: "/EmailClassifier/PredictData",
                 method: "GET",
                 dataType: "json",
                 success: function (response) {
-                    let tableBody = $("#emailTableBody");
-                    tableBody.empty(); // Clear previous data
-          debugger;
+                    $tableBody.empty();
+
+                    if (!response || response.length === 0) {
+                        showEmpty();
+                        return;
+                    }
+
                     response.forEach(function (email) {
-                        let row = `<tr>
-                            <td>${email.emailName}</td>
-                            <td>${email.emailExtension}</td>
-                            <td>${email.emailAttachments}</td>
-                            <td>${email.extractedText}</td>
-                            <td>${email.predictedRequestType}</td>
-                            <td>${email.predictedRequestTypeConfidenceScore}</td>
-                            <td>${email.requestTypeConfidenceScores}</td>
-                            <td>${email.predictedSubRequestType}</td>
-                            <td>${email.predictedSubRequestTypeConfidenceScore}</td>
-                            <td>${email.subRequestTypeConfidenceScores}</td>
-                        </tr>`;
-                        tableBody.append(row);
+                        if (!email.emailName) return; // Skip invalid entries
+
+                        const reqTypeScore = email.predictedRequestTypeConfidenceScore
+                            ? `<span class="parrot-green-bg px-2 py-1 rounded">${(email.predictedRequestTypeConfidenceScore * 100).toFixed(1)}%</span>`
+                            : 'N/A';
+
+                        const subReqTypeScore = email.predictedSubRequestTypeConfidenceScore
+                            ? `<span class="parrot-green-bg px-2 py-1 rounded">${(email.predictedSubRequestTypeConfidenceScore * 100).toFixed(1)}%</span>`
+                            : 'N/A';
+
+                        const row = `
+                            <tr>
+                                <td>${email.emailName || 'N/A'}</td>
+                                <td>${email.emailExtension || 'N/A'}</td>
+                                <td>${email.emailAttachments || 'None'}</td>
+                                <td class="text-truncate" style="max-width: 200px;"
+                                    title="${escapeHtml(email.extractedText || '')}">
+                                    ${truncateText(email.extractedText, 50)}
+                                </td>
+                                <td>${email.predictedRequestType || 'N/A'}</td>
+                                <td>${reqTypeScore}</td>
+                                <td class="text-truncate" title="${formatScores(email.requestTypeConfidenceScores)}">
+                                    ${truncateText(formatScores(email.requestTypeConfidenceScores), 30)}
+                                </td>
+                                <td>${email.predictedSubRequestType || 'N/A'}</td>
+                                <td>${subReqTypeScore}</td>
+                                <td class="text-truncate" title="${formatScores(email.subRequestTypeConfidenceScores)}">
+                                    ${truncateText(formatScores(email.subRequestTypeConfidenceScores), 30)}
+                                </td>
+                            </tr>`;
+                        $tableBody.append(row);
                     });
                 },
-                error: function () {
-                    alert("Error fetching email classification data.");
+                error: function (xhr) {
+                    const errorMsg = xhr.responseJSON?.message ||
+                        xhr.statusText ||
+                        'Server request failed';
+                    showError(errorMsg);
                 }
             });
+
+            // Helper functions
+            function truncateText(text, maxLength) {
+                if (!text) return 'N/A';
+                return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+            }
+
+            function escapeHtml(unsafe) {
+                if (!unsafe) return '';
+                return unsafe.toString()
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
         });
     </script>
+    <style>
+        /* Parrot green background color */
+        .parrot-green-bg {
+            background-color: #50C878; /* Parrot green color */
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Bold headers for the highlighted columns */
+        #emailTable th:nth-child(6),
+        #emailTable th:nth-child(9) {
+            font-weight: bold;
+            background-color: #f8f9fa;
+        }
+
+        /* Hover effect for better interactivity */
+        .parrot-green-bg:hover {
+            opacity: 0.9;
+        }
+    </style>
 </body>
 </html>
