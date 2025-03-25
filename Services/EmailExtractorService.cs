@@ -1,9 +1,8 @@
 ﻿using GenAIED_Sandesh.Interfaces;
-using Microsoft.Office.Interop.Word;
 using MimeKit;
-using System.Runtime.InteropServices;
 using Tesseract;
-using Application = Microsoft.Office.Interop.Word.Application;
+using Aspose.Words;
+using Aspose.Email.Mapi;
 
 namespace GenAIED_Sandesh.Services
 {
@@ -16,6 +15,8 @@ namespace GenAIED_Sandesh.Services
         {
             _env = env;
              path= _env.ContentRootPath;
+            new Aspose.Words.License().SetLicense("");
+            new Aspose.Email.License().SetLicense("");
         }
         public string ExtractTextFromImages(MemoryStream image)
         {
@@ -51,6 +52,73 @@ namespace GenAIED_Sandesh.Services
             string folderPath = Path.Combine(path, "MailMessages"); // Change to your folder path
 
             return ReadEmlFilesFromFolder(folderPath);
+
+        }
+
+        public string ExtractTextFromMsgFiles(string fileName)
+        {
+            MapiMessage msg = MapiMessage.FromMailMessage(fileName);
+
+
+            // Extract subject, sender, recipients
+            string emailText = msg.Subject;
+
+            // Extract email body (HTML/PlainText)
+            emailText = "\n\n" + msg.Body; // or msg.BodyHtml
+
+          
+
+            // Extract attachments
+            foreach (MapiAttachment attachment in msg.Attachments)
+            {
+                string attachmentFileName = attachment.FileName.ToLower();
+                string contentType = attachment.MimeTag.ToString().ToLower();
+                string attachmentText = "";
+                using MemoryStream memoryStream = new MemoryStream();
+                attachment.Save(memoryStream);
+
+                if (attachmentFileName.Contains("doc"))
+                {
+                    attachmentText = ExtractTextFromWord(memoryStream);
+                }
+                // Check for PDFs
+                else if (attachmentFileName.EndsWith(".pdf") || contentType.Contains("pdf"))
+                {
+                    attachmentText = ExtractTextFromAttachment(memoryStream, contentType);
+                }
+                // Check for images
+                else if (contentType.Contains("image"))
+                {
+                    attachmentText = ExtractTextFromImages(memoryStream);
+                }
+
+
+                //if (attachment is MimePart part && part.IsAttachment)
+                //{
+                //    using (var memoryStream = new MemoryStream())
+                //    {
+                //        string attachmentText = "";
+                //        part.Content.DecodeTo(memoryStream);
+
+                //        if (part.ContentType.MimeType.ToLower().Contains("image"))
+                //        {
+                //            attachmentText = ExtractTextFromImages(memoryStream);
+                //        }
+                //        else if (part.ContentType.MimeType.ToLower().Contains("word"))
+                //        {
+                //            attachmentText = ExtractTextFromWord(memoryStream);
+                //        }
+                //        else
+                //        {
+                //            attachmentText = ExtractTextFromAttachment(memoryStream, part.ContentType.MimeType);
+                //        }
+                //        emailText += "\n\n" + attachmentText;
+                //    }
+                //}
+
+                emailText += "\n\n" + attachmentText;
+            }
+            return emailText;
         }
 
         public List<string> ReadEmlFilesFromFolder(string folderPath)
@@ -64,15 +132,28 @@ namespace GenAIED_Sandesh.Services
                 emailTexts.Add(emailContent);
             }
 
+            var msgFiles = Directory.GetFiles(folderPath, "*.msg");
+            foreach (var msgFile in msgFiles)
+            {
+                string emailContent = ExtractTextFromMsgFiles(msgFile);
+                emailTexts.Add(emailContent);
+            }
+
             return emailTexts;
         }
+
+
 
         public string ReadEmlContent(string filePath)
         {
             try
             {
                 var message = MimeMessage.Load(filePath);
-                var emailText = message.TextBody ?? message.HtmlBody ?? "";
+
+                var emailText = message.Subject;
+
+                    emailText += "\n\n" +  message.TextBody ?? message.HtmlBody ?? "";
+
 
                 foreach (var attachment in message.Attachments)
                 {
@@ -168,54 +249,11 @@ namespace GenAIED_Sandesh.Services
             }
         }
         public string ExtractTextFromWord(MemoryStream memoryStream)
-        {
-            string tempFilePath = Path.GetTempFileName() + ".docx"; // Ensure correct extension
+        {           
+           Document doc = new Document(memoryStream);
 
-            try
-            {
-                // Step 1: Save MemoryStream to a temporary file
-                File.WriteAllBytes(tempFilePath, memoryStream.ToArray());
-
-                // Step 2: Initialize Word Interop
-                Microsoft.Office.Interop.Word.Application wordApp = new Application();
-                Document doc = null;
-                string extractedText = "";
-
-                try
-                {
-                    object missing = Type.Missing;
-                    object readOnly = true;
-                    object filePathObj = tempFilePath;
-
-                    // Step 3: Open the document
-                    doc = wordApp.Documents.Open(ref filePathObj, ref missing, ref readOnly,
-                                                 ref missing, ref missing, ref missing,
-                                                 ref missing, ref missing, ref missing,
-                                                 ref missing, ref missing, ref missing,
-                                                 ref missing, ref missing, ref missing, ref missing);
-
-                    // Step 4: Extract text
-                    extractedText = doc.Content.Text;
-                }
-                finally
-                {
-                    // Step 5: Cleanup COM objects
-                    doc?.Close(false);
-                    wordApp.Quit();
-                    Marshal.ReleaseComObject(doc);
-                    Marshal.ReleaseComObject(wordApp);
-                }
-
-                return extractedText;
-            }
-            finally
-            {
-                // Step 6: Delete temporary file
-                if (File.Exists(tempFilePath))
-                {
-                    File.Delete(tempFilePath);
-                }
-            }
+            // Extract all text (including headers/footers)
+            return doc.GetText();
         }
 
     }
