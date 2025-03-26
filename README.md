@@ -32,6 +32,7 @@ The project was inspired by the need to automate customer support ticket categor
 
 ---
 
+
 ### **What It Does**
 1. **Text Classification**:  
    - Uses ML.NET to classify text into `RequestType` (e.g., "Loans," "Account Services") and `SubRequestType` (e.g., "Loan Application," "Balance Inquiry").  
