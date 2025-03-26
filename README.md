@@ -1,60 +1,83 @@
-# 🚀 Project Name
+Table of Contents
 
-## 📌 Table of Contents
-- [Introduction](#introduction)
-- [Demo](#demo)
-- [Inspiration](#inspiration)
-- [What It Does](#what-it-does)
-- [How We Built It](#how-we-built-it)
-- [Challenges We Faced](#challenges-we-faced)
-- [How to Run](#how-to-run)
-- [Tech Stack](#tech-stack)
-- [Team](#team)
+Introduction
+Demo
+Inspiration
+What It Does
+How We Built It
+Challenges We Faced
+How to Run
+Tech Stack
+Introduction
 
----
+This application is a text classification system designed to categorize banking-related customer inquiries into predefined request types and sub-request types. It leverages machine learning (ML.NET) for classification and integrates with email processing (MimeKit) and OCR (Tesseract) to extract and analyze text from emails, attachments (PDFs, Word documents, and images), and other sources.
 
-## 🎯 Introduction
-A brief overview of your project and its purpose. Mention which problem statement are your attempting to solve. Keep it concise and engaging.
+Demo
 
-## 🎥 Demo
-🔗 [Live Demo](#) (if applicable)  
-📹 [Video Demo](#) (if applicable)  
-🖼️ Screenshots:
+Input: Emails with attachments (e.g., "How do I apply for a loan?" or "My debit card transaction was declined.").
+Output: Predicted categories (e.g., RequestType: Loans, SubRequestType: Loan Application) along with confidence scores.
+Example:
+Text: I want to check my account balance.
+Predicted RequestType: Account Services
+Predicted SubRequestType: Balance Inquiry
+Inspiration
 
-![Screenshot 1](link-to-image)
+The project was inspired by the need to automate customer support ticket categorization in banking systems. By classifying inquiries into hierarchical categories, the system can streamline routing, reduce response times, and improve service efficiency.
 
-## 💡 Inspiration
-What inspired you to create this project? Describe the problem you're solving.
+What It Does
 
-## ⚙️ What It Does
-Explain the key features and functionalities of your project.
+Text Classification:
+Uses ML.NET to classify text into RequestType (e.g., "Loans," "Account Services") and SubRequestType (e.g., "Loan Application," "Balance Inquiry").
+Email Processing:
+Extracts text from .eml files, including attachments (PDFs, Word documents, images).
+OCR Integration:
+Extracts text from images (Tesseract) and PDFs (iText).
+Hierarchical Prediction:
+Two ML models: One for primary (RequestType) and one for secondary (SubRequestType) classification.
+How We Built It
 
-## 🛠️ How We Built It
-Briefly outline the technologies, frameworks, and tools used in development.
+Data Preparation:
+Created a labeled dataset of banking inquiries (e.g., {"Text": "I need to reset my password", "RequestType": "Account Services", "SubRequestType": "Password Reset"}).
+Machine Learning Pipeline:
+Trained two multiclass classification models using SdcaMaximumEntropy (ML.NET).
+Features: Text featurization (TF-IDF, n-grams).
+Email and Attachment Processing:
+Used MimeKit to parse emails and attachments.
+Integrated Tesseract for OCR and iText for PDF text extraction.
+Prediction:
+Combined outputs of both models for hierarchical classification.
+Challenges We Faced
 
-## 🚧 Challenges We Faced
-Describe the major technical or non-technical challenges your team encountered.
+Data Scarcity: Limited labeled data for training required careful augmentation.
+Attachment Handling:
+Complexities in processing diverse formats (images, PDFs, Word).
+Memory management for large attachments.
+Model Accuracy:
+Fine-tuning featurization and hyperparameters to improve predictions.
+COM Interop for Word:
+Cleanup of COM objects (Marshal.ReleaseComObject) to avoid memory leaks.
+How to Run
 
-## 🏃 How to Run
-1. Clone the repository  
-   ```sh
-   git clone https://github.com/your-repo.git
-   ```
-2. Install dependencies  
-   ```sh
-   npm install  # or pip install -r requirements.txt (for Python)
-   ```
-3. Run the project  
-   ```sh
-   npm start  # or python app.py
-   ```
+Prerequisites
 
-## 🏗️ Tech Stack
-- 🔹 Frontend: React / Vue / Angular
-- 🔹 Backend: Node.js / FastAPI / Django
-- 🔹 Database: PostgreSQL / Firebase
-- 🔹 Other: OpenAI API / Twilio / Stripe
+.NET 6+ SDK.
+Tesseract OCR (eng.traineddata in tessdata folder).
+Microsoft Office (for Word Interop, if processing .docx files).
+Steps
 
-## 👥 Team
-- **Your Name** - [GitHub](#) | [LinkedIn](#)
-- **Teammate 2** - [GitHub](#) | [LinkedIn](#)
+Train Models:
+Uncomment CreateModelsAndSave() in Main() to generate and save ML models.
+Predict:
+Place .eml files in MailMessages folder.
+Run PredictData() to classify emails and attachments.
+Output:
+Predictions are logged to the console with confidence scores.
+Tech Stack
+
+Component	Technology/Tool
+Machine Learning	ML.NET
+Email Processing	MimeKit
+OCR	Tesseract
+PDF Extraction	iText
+Word Extraction	Microsoft Word Interop
+Language	C# (.NET 6)
