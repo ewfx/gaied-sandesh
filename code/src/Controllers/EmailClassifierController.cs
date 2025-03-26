@@ -42,8 +42,16 @@ namespace GenAIED_Sandesh.Controllers
         [HttpGet("PredictData")]
         public List<PredictionOutput> PredictData()
         {
-            var output=_modelTrainer.PredictData();
-            return output;
+            try
+            {
+                var output = _modelTrainer.PredictData();
+                return output;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while predicting data.");
+                return new List<PredictionOutput>();
+            }
         }
     }
 }
